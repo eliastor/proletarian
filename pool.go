@@ -59,6 +59,29 @@ type PoolConfig struct {
 // pool represents pool with input, worker and error queues. Each task landed in input queue is transported to worker queue.
 // Worker queue is handled by workers and if worker function returned error it will be placed to worker queue again until hits retries limit.
 // After that errored task will be sent to error queue where it must be readed by user code.
+
+type Pooler interface {
+	// Run triggers start of the pool. Must be called only once, can be called without creating new goroutine.
+	Run()
+
+	// Queue puts new task in input queue.
+	Queue(t Task)
+
+	// Shutdown gracefully stops pool, waiting for all task will be finished (successfully or errored after retries). The pool must not be used after Shutdown
+	Shutdown()
+
+	// Cancel stops pool ungracefully. The pool must not be used after Cancel
+	Cancel()
+
+	// ErroredTask returns task with error. It waits while such task appears and returns the task or nil if pool was shutted down and no more errored task available.
+	ErroredTask() Task
+
+	// Wait holds execution and waits until all tasks pool execution queue will be empty
+	Wait()
+}
+
+var _ Pooler = &pool{}
+
 type pool struct {
 	inputQ     chan Task
 	workersQ   chan Task
@@ -79,7 +102,7 @@ type pool struct {
 }
 
 // NewPool creates new Pool
-func NewPool(ctx context.Context, cfg PoolConfig) *pool {
+func NewPool(ctx context.Context, cfg PoolConfig) Pooler {
 	if cfg.Size < 1 {
 		cfg.Size = 1
 	}
@@ -138,7 +161,7 @@ func (p *pool) Queue(t Task) {
 	}
 }
 
-// Shutdown gracefuly stops pool, waiting for all task will be finished (successfully or errored after retries). The pool must not be used after Shutdown
+// Shutdown gracefully stops pool, waiting for all task will be finished (successfully or errored after retries). The pool must not be used after Shutdown
 func (p *pool) Shutdown() {
 	p.shutdownOnce.Do(func() {
 		close(p.inputQ)
@@ -151,7 +174,7 @@ func (p *pool) Shutdown() {
 	})
 }
 
-// Cancel stops pool ungracefuly. The pool must not be used after Cancel
+// Cancel stops pool ungracefully. The pool must not be used after Cancel
 func (p *pool) Cancel() {
 	p.cancel()
 }
