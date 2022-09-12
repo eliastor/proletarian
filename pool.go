@@ -3,7 +3,7 @@
 // Use if this source code is covered by an MIT-style
 // license that can be found in the LICENSE file
 
-// Package proletarian providers worker pool with gracefull shutdowns and retires of tasks
+// Package proletarian providers worker pool with graceful shutdowns and retires of tasks
 package proletarian
 
 import (
@@ -138,7 +138,7 @@ func (p *pool) Queue(t Task) {
 	}
 }
 
-// Shutdown gracefully stops pool, waiting for all task will be finished (succesfully or errored after retries). The pool must not be used after Shutdown
+// Shutdown gracefuly stops pool, waiting for all task will be finished (successfully or errored after retries). The pool must not be used after Shutdown
 func (p *pool) Shutdown() {
 	p.shutdownOnce.Do(func() {
 		close(p.inputQ)
@@ -151,7 +151,7 @@ func (p *pool) Shutdown() {
 	})
 }
 
-// Cancel stops pool ungracefully. The pool must not be used after Cancel
+// Cancel stops pool ungracefuly. The pool must not be used after Cancel
 func (p *pool) Cancel() {
 	p.cancel()
 }
