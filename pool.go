@@ -1,3 +1,9 @@
+// Copyright (c) 2022 Ilya Toropchenko <eliastor@users.noreply.github.com>
+//
+// Use if this source code is covered by an MIT-style
+// license that can be found in the LICENSE file
+
+// Package proletarian providers worker pool with gracefull shutdowns and retires of tasks
 package proletarian
 
 import (

@@ -1,3 +1,8 @@
+// Copyright (c) 2022 Ilya Toropchenko <eliastor@users.noreply.github.com>
+//
+// Use if this source code is covered by an MIT-style
+// license that can be found in the LICENSE file
+
 package proletarian_test
 
 import (
