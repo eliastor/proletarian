@@ -7,16 +7,21 @@ import (
 	"sync/atomic"
 )
 
+// Task is the interface that every task in pool must satisfy
 type Task interface {
+	// SetError sets error and increase error counter if err != nil
 	SetError(error)
+	// ErrorCount returns number of errors for the task
 	ErrorCount() int
 }
 
+// TaskHeader is structure that satisfy Task interface and intended to be embedded in user-defined tasks
 type TaskHeader struct {
 	retries int
 	err     error
 }
 
+// SetError sets error in TaskHeader and increase error counter if err != nil
 func (t *TaskHeader) SetError(err error) {
 	t.err = err
 	if err != nil {
@@ -24,17 +29,30 @@ func (t *TaskHeader) SetError(err error) {
 	}
 
 }
+
+// ErrorCount returns number of errors for the task
 func (t *TaskHeader) ErrorCount() int {
 	return t.retries
 }
 
+// PoolConfig includes configuration for the pool. All values are normlized to limits.
 type PoolConfig struct {
+	// LobbbySize sets size of input queue, default value is 0
 	LobbySize int
-	Size      int
-	Retries   int
-	Func      func(t Task) error
+
+	// Size sets size of workers, default value is 1, it is normalised to range [1 .. runtime.GOMAXPROCS(0) * 32]
+	Size int
+
+	// Retries limits nubmer of retries for every task. Set this value to something bigger than 0
+	Retries int
+
+	// Func is function that will be executed in every worker
+	Func func(t Task) error
 }
 
+// pool represents pool with input, worker and error queues. Each task landed in input queue is transported to worker queue.
+// Worker queue is handled by workers and if worker function returned error it will be placed to worker queue again until hits retries limit.
+// After that errored task will be sent to error queue where it must be readed by user code.
 type pool struct {
 	inputQ     chan Task
 	workersQ   chan Task
@@ -54,6 +72,7 @@ type pool struct {
 	cfg      PoolConfig
 }
 
+// NewPool creates new Pool
 func NewPool(ctx context.Context, cfg PoolConfig) *pool {
 	if cfg.Size < 1 {
 		cfg.Size = 1
@@ -92,6 +111,7 @@ func (p *pool) lobby() {
 
 }
 
+// Run triggers start of the pool. Must be called only once, can be called without creating new goroutine.
 func (p *pool) Run() {
 	p.inputLock.Lock()
 	go p.lobby()
@@ -101,6 +121,7 @@ func (p *pool) Run() {
 	}
 }
 
+// Queue puts new task in input queue.
 func (p *pool) Queue(t Task) {
 	// ok := p.inputLock.TryLock()
 	if p.inputQ != nil {
@@ -111,6 +132,7 @@ func (p *pool) Queue(t Task) {
 	}
 }
 
+// Shutdown gracefully stops pool, waiting for all task will be finished (succesfully or errored after retries). The pool must not be used after Shutdown
 func (p *pool) Shutdown() {
 	p.shutdownOnce.Do(func() {
 		close(p.inputQ)
@@ -123,14 +145,17 @@ func (p *pool) Shutdown() {
 	})
 }
 
+// Cancel stops pool ungracefully. The pool must not be used after Cancel
 func (p *pool) Cancel() {
 	p.cancel()
 }
 
+// ErroredTask returns task with error. It waits while such task appears and returns the task or nil if pool was shutted down and no more errored task available.
 func (p *pool) ErroredTask() Task {
 	return <-p.errch
 }
 
+// Wait holds execution and waits until all tasks pool execution queue will be empty
 func (p *pool) Wait() {
 	p.inputLock.Lock()
 	defer p.inputLock.Unlock()
