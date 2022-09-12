@@ -19,7 +19,12 @@ type Task interface {
 	SetError(error)
 	// ErrorCount returns number of errors for the task
 	ErrorCount() int
+	Err() error
 }
+
+var (
+	_ Task = &TaskHeader{}
+)
 
 // TaskHeader is structure that satisfy Task interface and intended to be embedded in user-defined tasks
 type TaskHeader struct {
@@ -39,6 +44,11 @@ func (t *TaskHeader) SetError(err error) {
 // ErrorCount returns number of errors for the task
 func (t *TaskHeader) ErrorCount() int {
 	return t.retries
+}
+
+// Err returns last error iccured in task
+func (t *TaskHeader) Err() error {
+	return t.err
 }
 
 // PoolConfig includes configuration for the pool. All values are normlized to limits.
