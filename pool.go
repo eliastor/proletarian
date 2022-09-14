@@ -19,7 +19,12 @@ type Task interface {
 	SetError(error)
 	// ErrorCount returns number of errors for the task
 	ErrorCount() int
+
+	// Err returns last error set by SetError
 	Err() error
+
+	// Unwrap is same as Err and returns last error set by SetError
+	Unwrap() error
 }
 
 var (
@@ -46,20 +51,24 @@ func (t *TaskHeader) ErrorCount() int {
 	return t.retries
 }
 
-// Err returns last error iccured in task
+// Err returns last error occurred in task
 func (t *TaskHeader) Err() error {
 	return t.err
 }
 
-// PoolConfig includes configuration for the pool. All values are normlized to limits.
+func (t *TaskHeader) Unwrap() error {
+	return t.err
+}
+
+// PoolConfig includes configuration for the pool. All values are normalized to limits.
 type PoolConfig struct {
 	// LobbbySize sets size of input queue, default value is 0
 	LobbySize int
 
-	// Size sets size of workers, default value is 1, it is normalised to range [1 .. runtime.GOMAXPROCS(0) * 32]
+	// Size sets size of workers, default value is 1, it is normalized to range [1 .. runtime.GOMAXPROCS(0) * 32]
 	Size int
 
-	// Retries limits nubmer of retries for every task. Set this value to something bigger than 0
+	// Retries limits number of retries for every task. Set this value to something bigger than 0
 	Retries int
 
 	// Func is function that will be executed in every worker
@@ -68,7 +77,7 @@ type PoolConfig struct {
 
 // pool represents pool with input, worker and error queues. Each task landed in input queue is transported to worker queue.
 // Worker queue is handled by workers and if worker function returned error it will be placed to worker queue again until hits retries limit.
-// After that errored task will be sent to error queue where it must be readed by user code.
+// After that errored task will be sent to error queue where it must be read by user code.
 
 type Pooler interface {
 	// Run triggers start of the pool. Must be called only once, can be called without creating new goroutine.
@@ -83,7 +92,7 @@ type Pooler interface {
 	// Cancel stops pool ungracefully. The pool must not be used after Cancel
 	Cancel()
 
-	// ErroredTask returns task with error. It waits while such task appears and returns the task or nil if pool was shutted down and no more errored task available.
+	// ErroredTask returns task with error. It waits while such task appears and returns the task or nil if pool was shut down and no more errored task available.
 	ErroredTask() Task
 
 	// Wait holds execution and waits until all tasks pool execution queue will be empty
@@ -95,7 +104,7 @@ var _ Pooler = &pool{}
 type pool struct {
 	inputQ     chan Task
 	workersQ   chan Task
-	errch      chan Task
+	errCh      chan Task
 	workersWG  *sync.WaitGroup
 	inflightWG *sync.WaitGroup
 	inputLock  *sync.Mutex
@@ -129,7 +138,7 @@ func NewPool(ctx context.Context, cfg PoolConfig) Pooler {
 		inflightWG: new(sync.WaitGroup),
 		inputQ:     make(chan Task, cfg.LobbySize),
 		workersQ:   make(chan Task),
-		errch:      make(chan Task),
+		errCh:      make(chan Task),
 		inputLock:  new(sync.Mutex),
 		cfg:        cfg,
 	}
@@ -180,7 +189,7 @@ func (p *pool) Shutdown() {
 		p.inflightWG.Wait()
 		close(p.workersQ)
 		p.workersQ = nil
-		close(p.errch)
+		close(p.errCh)
 	})
 }
 
@@ -189,9 +198,9 @@ func (p *pool) Cancel() {
 	p.cancel()
 }
 
-// ErroredTask returns task with error. It waits while such task appears and returns the task or nil if pool was shutted down and no more errored task available.
+// ErroredTask returns task with error. It waits while such task appears and returns the task or nil if pool was shut down and no more errored task available.
 func (p *pool) ErroredTask() Task {
-	return <-p.errch
+	return <-p.errCh
 }
 
 // Wait holds execution and waits until all tasks pool execution queue will be empty
@@ -218,7 +227,7 @@ func (p *pool) worker(i int) {
 					go func() {
 						select {
 						case <-p.ctx.Done():
-						case p.errch <- task:
+						case p.errCh <- task:
 							p.inflightWG.Done()
 							p.inFlight.Add(-1)
 						}
