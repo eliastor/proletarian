@@ -27,7 +27,7 @@ type task struct {
 	retries    int
 }
 
-func newPoolTestDunc(t *testing.T) func(tt proletarian.Task) error {
+func newPoolTestFunc(t *testing.T) func(tt proletarian.Task) error {
 	return func(tt proletarian.Task) error {
 		current := tt.(*task)
 		if current.mustfail {
@@ -65,7 +65,7 @@ func TestPoolAllOk(t *testing.T) {
 		LobbySize: 0,
 		Size:      2,
 		Retries:   2,
-		Func:      newPoolTestDunc(t),
+		Func:      newPoolTestFunc(t),
 	})
 
 	pool.Run()
@@ -105,7 +105,7 @@ func TestPollAllFailed(t *testing.T) {
 		LobbySize: 0,
 		Size:      2,
 		Retries:   2,
-		Func:      newPoolTestDunc(t),
+		Func:      newPoolTestFunc(t),
 	})
 
 	go pool.Run()
