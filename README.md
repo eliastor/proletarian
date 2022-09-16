@@ -31,31 +31,25 @@ pool := proletarian.NewPool(context.TODO(), proletarian.PoolConfig{
 	},
 })
 
-pool.Run()
+pool.Run() // Run pool workers and internals
 
 go func() {
 	for i := range tasks {
 		pool.Queue(tasks[i])
 	}
-	pool.Shutdown()
+	pool.Shutdown() // pool.Queue will not add new tasks to the pool and it will wait until all tasks will be finished (including retires) and stops pool. After Shutdown() pool is not usable anymore.
 }()
-
-erroredTasks := []proletarian.Task{}
 
 go func() {
 	for {
 		errTask := pool.ErroredTask()
 		if errTask == nil {
-			break
+			return
 		}
-
-		if assert.NotNil(t, errTask) {
-			erroredTasks = append(erroredTasks, errTask)
-		}
+		// process errored task
 	}
 }()
 
-pool.Wait()
-
+pool.Wait() // Wait for wait pool workers to finish all tasks
 
 ```
