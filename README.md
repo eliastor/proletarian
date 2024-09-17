@@ -1,0 +1,6 @@
+
+# proletarian 
+
+Worker pool with retries and gracefull shutdown for Go
+
+## This code is not used by any opensource project. For using it privately, please, open the [issue](https://github.com/eliastor/proletarian/issues/new?title=Requesting%20a%20license%20for%20using%20proletarian%20in%20closed%20source%20code&body=Hello%21%0A%0AI%27m%20%3Cyour_name%3E%5B%20from%20%3Corganization_name%3E%5D%20and%20want%20to%20use%20proletarian%20in%20my%20closed%20source%20project.%0AMy%20project%20is%20a%20%3Cshort%20description%20of%20your%20project%3E.%0AMy%20email%20is%20%3Cyour_email%3E.%0A%0ABest%20regards%2C%0A%20%3Cyour_name%3E) or send your request to license+proletarian@eliastor.cc ([mailto-link](mailto:license+proletarian@eliastor.cc?subject=Requesting%20a%20license%20for%20using%20proletarian%20in%20closed%20source%20code&body=Hello!%0A%0AI'm%20%3Cyour_name%3E%5B%20from%20%3Corganization_name%3E%5D%20and%20want%20to%20use%20proletarian%20in%20my%20closed%20source%20project.%0AMy%20project%20is%20a%20%3Cshort%20description%20of%20your%20project%3E.%0AMy%20email%20is%20%3Cyour_email%3E.%0A%0ABest%20regards%2C%0A%20%3Cyour_name%3E))
